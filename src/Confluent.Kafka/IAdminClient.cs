@@ -405,7 +405,7 @@ namespace Confluent.Kafka
         ///                   or mirror librdkafka and have the same return for list and describe both.
         ///                   This todo will be removed after a PR review.
         /// </returns>
-        List<GroupInfo> ListConsumerGroups(ListConsumerGroupsOptions options = null);
+        Task<ListConsumerGroupsResult> ListConsumerGroupsAsync(ListConsumerGroupsOptions options = null);
 
         /// <summary>
         ///    Describes consumer groups in the cluster.
@@ -430,7 +430,7 @@ namespace Confluent.Kafka
         /// <returns>
         ///     A List of <see cref="Confluent.Kafka.GroupInfo"/>.
         /// </returns>
-        List<GroupInfo> DescribeConsumerGroups(IList<string> groups, DescribeConsumerGroupsOptions options = null);
+        Task<List<ConsumerGroupDescription>> DescribeConsumerGroupsAsync(IEnumerable<string> groups, DescribeConsumerGroupsOptions options = null);
     }
 
 }

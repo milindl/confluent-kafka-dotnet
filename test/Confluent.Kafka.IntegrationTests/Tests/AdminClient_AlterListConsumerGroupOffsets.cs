@@ -124,7 +124,7 @@ namespace Confluent.Kafka.IntegrationTests
                 new GroupTopicPartitions[] {
                     new GroupTopicPartitions(groupID, tpList),
                 },
-                new ListConsumerGroupOffsetsOptions() { RequireStable = false }
+                new ListConsumerGroupOffsetsOptions() { RequireStableOffsets = false }
             ).Result;
 
             Assert.Single(lcgoResults);
@@ -159,7 +159,7 @@ namespace Confluent.Kafka.IntegrationTests
                 new GroupTopicPartitions[] {
                     new GroupTopicPartitions(groupID, tpList),
                 },
-                new ListConsumerGroupOffsetsOptions() { RequireStable = false }
+                new ListConsumerGroupOffsetsOptions() { RequireStableOffsets = false }
             ).Result;
 
             Assert.Single(lcgoResults);

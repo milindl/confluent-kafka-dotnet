@@ -1010,13 +1010,26 @@ namespace Confluent.Kafka
         /// <summary>
         ///     Refer to <see cref="Confluent.Kafka.IAdminClient.ListConsumerGroups(ListConsumerGroupsOptions)" />
         /// </summary>
-        public List<GroupInfo> ListConsumerGroups(ListConsumerGroupsOptions options = null)
-            => Handle.LibrdkafkaHandle.ListConsumerGroups(options);
+        public Task<ListConsumerGroupsResult> ListConsumerGroupsAsync(ListConsumerGroupsOptions options = null) {
+            var completionSource = new TaskCompletionSource<ListConsumerGroupsResult>();
+            var gch = GCHandle.Alloc(completionSource);
+            Handle.LibrdkafkaHandle.ListConsumerGroups(
+                options, resultQueue,
+                GCHandle.ToIntPtr(gch));
+            return completionSource.Task;
+        }
+
 
         /// <summary>
         ///     Refer to <see cref="Confluent.Kafka.IAdminClient.DescribeConsumerGroups(IList{string}, DescribeConsumerGroupsOptions)" />
         /// </summary>
-        public List<GroupInfo> DescribeConsumerGroups(IList<string> groups, DescribeConsumerGroupsOptions options = null)
-            => Handle.LibrdkafkaHandle.DescribeConsumerGroups(groups, options);
+        public Task<List<ConsumerGroupDescription>> DescribeConsumerGroupsAsync(IEnumerable<string> groups, DescribeConsumerGroupsOptions options = null) {
+            var completionSource = new TaskCompletionSource<List<ConsumerGroupDescription>>();
+            var gch = GCHandle.Alloc(completionSource);
+            Handle.LibrdkafkaHandle.DescribeConsumerGroups(
+                groups, options, resultQueue,
+                GCHandle.ToIntPtr(gch));
+            return completionSource.Task;
+        }
     }
 }

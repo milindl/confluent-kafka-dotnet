@@ -15,29 +15,20 @@
 // Refer to LICENSE for more information.
 
 using System;
+using System.Collections.Generic;
 
 namespace Confluent.Kafka.Admin
 {
     /// <summary>
-    ///     Options for the "AdminClient.ListConsumerGroupOffsetsAsync" method.
+    ///     
     /// </summary>
-    public class ListConsumerGroupOffsetsOptions
+    public class ConsumerGroupDescription
     {
         /// <summary>
-        ///     The overall request timeout, including broker lookup, request
-        ///     transmission, operation time on broker, and response. If set
-        ///     to null, the default request timeout for the AdminClient will
-        ///     be used.
-        ///
-        ///     Default: null
+        ///     The groupID.
         /// </summary>
-        public TimeSpan? RequestTimeout { get; set; }
+        public string Group { get; set; }
 
-        /// <summary>
-        ///     Decides if the broker should return stable offsets (transaction-committed).
-        ///
-        ///     Default: false
-        /// </summary>
-        public bool RequireStableOffsets { get; set; } = false;
+        internal Error Error { get; set; }
     }
 }

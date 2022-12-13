@@ -1393,15 +1393,25 @@ namespace Confluent.Kafka.Impl
             }
         }
 
-        private void setOption_RequireStable(IntPtr optionsPtr, bool requireStable)
+        private void setOption_RequireStableOffsets(IntPtr optionsPtr, bool requireStable)
         {
-            var errorStringBuilder = new StringBuilder(Librdkafka.MaxErrorStringLength);
-            var errorCode = Librdkafka.AdminOptions_set_require_stable(optionsPtr, (IntPtr)(int)(requireStable ? 1 : 0), errorStringBuilder, (UIntPtr)errorStringBuilder.Capacity);
-            if (errorCode != ErrorCode.NoError)
+            var rError = Librdkafka.AdminOptions_set_require_stable_offsets(optionsPtr, (IntPtr)(int)(requireStable ? 1 : 0));
+            var error = new Error(rError, true);
+            if (error.Code != ErrorCode.NoError)
             {
-                throw new KafkaException(CreatePossiblyFatalError(errorCode, errorStringBuilder.ToString()));
+                throw new KafkaException(error);
             }
 
+        }
+
+        private void setOption_ConsumerGroupStates(IntPtr optionsPtr, ConsumerGroupState[] states)
+        {
+            var rError = Librdkafka.AdminOptions_set_consumer_group_states(optionsPtr, states, (UIntPtr)states.Count());
+            var error = new Error(rError, true);
+            if (error.Code != ErrorCode.NoError)
+            {
+                throw new KafkaException(error);
+            }
         }
 
         private void setOption_completionSource(IntPtr optionsPtr, IntPtr completionSourcePtr)
@@ -2087,7 +2097,7 @@ namespace Confluent.Kafka.Impl
                 options = options ?? new ListConsumerGroupOffsetsOptions();
                 optionsPtr = Librdkafka.AdminOptions_new(handle, Librdkafka.AdminOp.ListConsumerGroupOffsets);
                 setOption_RequestTimeout(optionsPtr, options.RequestTimeout);
-                setOption_RequireStable(optionsPtr, options.RequireStable);
+                setOption_RequireStableOffsets(optionsPtr, options.RequireStableOffsets);
                 setOption_completionSource(optionsPtr, completionSourcePtr);
 
                 // Create the objects required by librdkafka to call the method.
@@ -2130,151 +2140,42 @@ namespace Confluent.Kafka.Impl
 
         }
 
-        internal List<GroupInfo> ListConsumerGroups(ListConsumerGroupsOptions options = null)
+        internal void ListConsumerGroups(
+            ListConsumerGroupsOptions options,
+            IntPtr resultQueuePtr,
+            IntPtr completionSourcePtr)
         {
             ThrowIfHandleClosed();
 
-            IntPtr grplistPtr = IntPtr.Zero;
             IntPtr optionsPtr = IntPtr.Zero;
-            List<GroupInfo> groups = null;
             try
             {
-                // Set options if any.
-                if (options != null)
+                options = options ?? new ListConsumerGroupsOptions();
+                optionsPtr = Librdkafka.AdminOptions_new(handle, Librdkafka.AdminOp.ListConsumerGroupOffsets);
+                setOption_RequestTimeout(optionsPtr, options.RequestTimeout);
+                if (options.States != null)
                 {
-                    var timeoutMs = -1;
-                    if (options.RequestTimeout.HasValue)
-                    {
-                        timeoutMs = options.RequestTimeout.Value.TotalMillisecondsAsInt();
-                    }
-
-                    ConsumerGroupState[] statesList = null;
-                    if (options.States != null)
-                    {
-                        statesList = options.States.ToArray();
-                    }
-
-                    optionsPtr = Librdkafka.list_consumer_groups_options_new(timeoutMs, statesList, (UIntPtr)(statesList == null ? 0 : statesList.Count()));
+                    setOption_ConsumerGroupStates(optionsPtr, options.States.ToArray());
                 }
+                setOption_completionSource(optionsPtr, completionSourcePtr);
 
-                ErrorCode err = Librdkafka.list_consumer_groups(handle, out grplistPtr, optionsPtr);
-                if (err != ErrorCode.NoError)
-                {
-                    throw new KafkaException(CreatePossiblyFatalError(err, null));
-                }
-                var list = Util.Marshal.PtrToStructure<rd_kafka_group_list>(grplistPtr);
-                groups = Enumerable.Range(0, list.group_cnt)
-                    .Select(i => Util.Marshal.PtrToStructure<rd_kafka_group_info>(
-                        list.groups + i * Util.Marshal.SizeOf<rd_kafka_group_info>()))
-                    .Select(gi => new GroupInfo(gi.group, gi.err, gi.state_code, gi.is_simple_consumer_group == 1))
-                    .ToList();
+                Librdkafka.ListConsumerGroups(handle, optionsPtr, resultQueuePtr);
             }
             finally
             {
-                if (grplistPtr != IntPtr.Zero)
-                {
-                    Librdkafka.group_list_destroy(grplistPtr);
-                }
                 if (optionsPtr != IntPtr.Zero)
                 {
-                    Librdkafka.list_consumer_groups_options_destroy(optionsPtr);
+                    Librdkafka.AdminOptions_destroy(optionsPtr);
                 }
-            }
 
-            if (groups.Any(groupInfo => groupInfo.Error.IsError))
-            {
-                throw new ListConsumerGroupException(groups);
             }
-            return groups;
         }
 
 
-        internal List<GroupInfo> DescribeConsumerGroups(IList<string> groups, DescribeConsumerGroupsOptions options = null)
+        internal void DescribeConsumerGroups(IEnumerable<string> groups, DescribeConsumerGroupsOptions options, IntPtr resultQueuePtr, IntPtr completionSourcePtr)
         {
             ThrowIfHandleClosed();
-
-            IntPtr grplistPtr = IntPtr.Zero;
-            IntPtr optionsPtr = IntPtr.Zero;
-            List<GroupInfo> result = null;
-            try
-            {
-                if (options != null)
-                {
-                    var timeoutMs = -1;
-                    if (options.RequestTimeout.HasValue)
-                    {
-                        timeoutMs = options.RequestTimeout.Value.TotalMillisecondsAsInt();
-                    }
-                    optionsPtr = Librdkafka.describe_consumer_groups_options_new(timeoutMs);
-                }
-                var groupsArray = groups != null ? groups.ToArray() : null;
-                var groupCnt = groups != null ? groups.Count() : 0;
-                ErrorCode err = Librdkafka.describe_consumer_groups(
-                    handle,
-                    groupsArray,
-                    (UIntPtr)(groupCnt),
-                    out grplistPtr,
-                    optionsPtr);
-
-                if (err != ErrorCode.NoError)
-                {
-                    throw new KafkaException(CreatePossiblyFatalError(err, null));
-                }
-
-                var list = Util.Marshal.PtrToStructure<rd_kafka_group_list>(grplistPtr);
-                result =
-                Enumerable.Range(0, list.group_cnt)
-                    .Select(i => Util.Marshal.PtrToStructure<rd_kafka_group_info>(
-                        list.groups + i * Util.Marshal.SizeOf<rd_kafka_group_info>()))
-                    .Select(gi => new GroupInfo(
-                            new BrokerMetadata(
-                                gi.broker.id,
-                                gi.broker.host,
-                                gi.broker.port
-                            ),
-                            gi.group,
-                            gi.err,
-                            gi.state,
-                            gi.state_code,
-                            gi.is_simple_consumer_group == 1,
-                            gi.protocol_type,
-                            gi.protocol,
-                            Enumerable.Range(0, gi.member_cnt)
-                                .Select(j => Util.Marshal.PtrToStructure<rd_kafka_group_member_info>(
-                                    gi.members + j * Util.Marshal.SizeOf<rd_kafka_group_member_info>()))
-                                .Select(mi => new GroupMemberInfo(
-                                        mi.member_id,
-                                        mi.client_id,
-                                        mi.client_host,
-                                        CopyBytes(
-                                            mi.member_metadata,
-                                            mi.member_metadata_size),
-                                        CopyBytes(
-                                            mi.member_assignment,
-                                            mi.member_assignment_size),
-                                        mi.member_assignment_toppars == IntPtr.Zero ? null : GetTopicPartitionList(mi.member_assignment_toppars)
-                                    ))
-                                .ToList()
-                        ))
-                    .ToList();
-            }
-            finally
-            {
-                if (grplistPtr != IntPtr.Zero)
-                {
-                    Librdkafka.group_list_destroy(grplistPtr);
-                }
-                if (optionsPtr != IntPtr.Zero)
-                {
-                    Librdkafka.describe_consumer_groups_options_destroy(optionsPtr);
-                }
-            }
-
-            if (result.Any(groupInfo => groupInfo.Error.IsError))
-            {
-                throw new DescribeConsumerGroupException(result);
-            }
-            return result;
+            throw new Exception("Unimplemented");
         }
 
         internal void OAuthBearerSetToken(string tokenValue, long lifetimeMs, string principalName, IDictionary<string, string> extensions)
