@@ -13,38 +13,37 @@
 // limitations under the License.
 //
 // Refer to LICENSE for more information.
-using System.Collections.Generic;
 
 namespace Confluent.Kafka.Admin
 {
     /// <summary>
-    ///     Represents the result of a list consumer group operation.
+    ///     MemberDescription represents the description of a consumer group member
     /// </summary>
-    public class ListConsumerGroupsResult
+    public class MemberDescription
     {
         /// <summary>
-        ///    List of valid consumer group listings.
+        ///     Client id.
         /// </summary>
-        public List<ConsumerGroupListing> Valid { get; set; }
+        public string ClientId { get; set; }
 
         /// <summary>
-        ///   List of non-client level errors encountered while listing groups.
+        ///     Group instance id.
         /// </summary>
-        public List<Error> Errors { get; set; }
+        public string GroupInstanceId { get; set; }
 
         /// <summary>
-        ///    Returns a human readable representation of this object.
+        ///     Consumer id.
         /// </summary>
-        public override string ToString() {
-            string res = "Groups:\n";
-            foreach (ConsumerGroupListing cgl in Valid) {
-                res += "\t" + cgl.ToString() + "\n";
-            }
-            res += "Errors:\n";
-            foreach (Error err in Errors) {
-                res += "\t" + err.ToString() + "\n";
-            }
-            return res;
-        }
+        public string ConsumerId { get; set; }
+
+        /// <summary>
+        ///     Group member host.
+        /// </summary>
+        public string Host { get; set; }
+
+        /// <summary>
+        ///     Member assignment.
+        /// </summary>
+        public MemberAssignment Assignment { get; set; }
     }
 }

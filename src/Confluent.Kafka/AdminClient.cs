@@ -207,7 +207,7 @@ namespace Confluent.Kafka
             }).ToList();
         }
 
-        private List<ListConsumerGroupOffsetsResult> extractListConsumerGroupResults(IntPtr resultPtr)
+        private List<ListConsumerGroupOffsetsResult> extractListConsumerGroupOffsetsResults(IntPtr resultPtr)
         {
             var resultGroupsPtr = Librdkafka.ListConsumerGroupOffsets_result_groups(resultPtr, out UIntPtr resultCountPtr);
             IntPtr[] resultGroupsPtrArr = new IntPtr[(int)resultCountPtr];
@@ -226,7 +226,7 @@ namespace Confluent.Kafka
             }).ToList();
         }
 
-        private List<AlterConsumerGroupOffsetsResult> extractAlterConsumerGroupResults(IntPtr resultPtr)
+        private List<AlterConsumerGroupOffsetsResult> extractAlterConsumerGroupOffsetsResults(IntPtr resultPtr)
         {
             var resultGroupsPtr = Librdkafka.AlterConsumerGroupOffsets_result_groups(resultPtr, out UIntPtr resultCountPtr);
             IntPtr[] resultGroupsPtrArr = new IntPtr[(int)resultCountPtr];
@@ -242,6 +242,100 @@ namespace Confluent.Kafka
                     Error = new Error(Librdkafka.group_result_error(resultGroupPtr), false),
                     Partitions = SafeKafkaHandle.GetTopicPartitionOffsetErrorList(partitionsPtr),
                 };
+            }).ToList();
+        }
+
+        private ListConsumerGroupsResult extractListConsumerGroupsResults(IntPtr resultPtr)
+        {
+            var result = new ListConsumerGroupsResult() { 
+                Valid = new List<ConsumerGroupListing>(),
+                Errors = new List<Error>(),
+            };
+
+            var validResultsPtr = Librdkafka.ListConsumerGroups_result_valid(resultPtr, out UIntPtr resultCountPtr);
+            if ((int)resultCountPtr != 0)
+            {
+                IntPtr[] consumerGroupListingPtrArr = new IntPtr[(int)resultCountPtr];
+                Marshal.Copy(validResultsPtr, consumerGroupListingPtrArr, 0, (int)resultCountPtr);
+                result.Valid = consumerGroupListingPtrArr.Select(cglPtr => {
+                    return new ConsumerGroupListing() {
+                        GroupId = PtrToStringUTF8(Librdkafka.ConsumerGroupListing_group_id(cglPtr)),
+                        IsSimpleConsumerGroup =
+                            (int)Librdkafka.ConsumerGroupListing_is_simple_consumer_group(cglPtr) == 1,
+                        State = Librdkafka.ConsumerGroupListing_state(cglPtr),
+                    };
+                }).ToList();
+            }
+
+
+            var errorsPtr = Librdkafka.ListConsumerGroups_result_errors(resultPtr, out UIntPtr errorCountPtr);
+            if ((int)errorCountPtr != 0)
+            {
+                IntPtr[] errorsPtrArr = new IntPtr[(int)errorCountPtr];
+                Marshal.Copy(errorsPtr, errorsPtrArr, 0, (int)errorCountPtr);
+                result.Errors = errorsPtrArr.Select(errorPtr => new Error(errorPtr)).ToList();
+            }
+
+            return result;
+        }
+
+        private List<ConsumerGroupDescription> extractDescribeConsumerGroupsResults(IntPtr resultPtr) {
+            var groupsPtr = Librdkafka.DescribeConsumerGroups_result_groups(resultPtr, out UIntPtr groupsCountPtr);
+            if ((int)groupsCountPtr == 0) 
+                return new List<ConsumerGroupDescription>();
+
+            IntPtr[] groupPtrArr = new IntPtr[(int)groupsCountPtr];
+            Marshal.Copy(groupsPtr, groupPtrArr, 0, (int)groupsCountPtr);
+
+            return groupPtrArr.Select(groupPtr => {
+
+                var coordinatorPtr = Librdkafka.ConsumerGroupDescription_coordinator(groupPtr);
+                var coordinator = new Node() {
+                    Id = (int)Librdkafka.Node_id(coordinatorPtr),
+                    Host = PtrToStringUTF8(Librdkafka.Node_host(coordinatorPtr)),
+                    Port = (int)Librdkafka.Node_port(coordinatorPtr),
+                };
+
+                var memberCount = (int)Librdkafka.ConsumerGroupDescription_member_count(groupPtr);
+                var members = new List<MemberDescription>();
+                for (int midx = 0; midx < memberCount; midx++)
+                {
+                    var memberPtr = Librdkafka.ConsumerGroupDescription_member(groupPtr, (IntPtr)midx);
+                    var member = new MemberDescription() {
+                        ClientId =
+                            PtrToStringUTF8(Librdkafka.MemberDescription_client_id(memberPtr)),
+                        ConsumerId =
+                            PtrToStringUTF8(Librdkafka.MemberDescription_consumer_id(memberPtr)),
+                        Host = 
+                            PtrToStringUTF8(Librdkafka.MemberDescription_host(memberPtr)),
+                        GroupInstanceId =
+                            PtrToStringUTF8(Librdkafka.MemberDescription_group_instance_id(memberPtr)),
+                    };
+                    var assignmentPtr = Librdkafka.MemberDescription_assignment(memberPtr);
+                    var topicPartitionPtr = Librdkafka.MemberAssignment_topic_partitions(assignmentPtr);
+                    member.Assignment = new MemberAssignment();
+                    if (topicPartitionPtr != IntPtr.Zero)
+                    {
+                        member.Assignment.TopicPartitions = SafeKafkaHandle.GetTopicPartitionList(topicPartitionPtr);
+                    }
+                    members.Add(member);
+                }
+
+                var desc = new ConsumerGroupDescription() {
+                    GroupId =
+                        PtrToStringUTF8(Librdkafka.ConsumerGroupDescription_group_id(groupPtr)),
+                    Error =
+                        new Error(Librdkafka.ConsumerGroupDescription_error(groupPtr)),
+                    IsSimpleConsumerGroup =
+                        (int)Librdkafka.ConsumerGroupDescription_is_simple_consumer_group(groupPtr) == 1,
+                    PartitionAssignor =
+                        PtrToStringUTF8(Librdkafka.ConsumerGroupDescription_partition_assignor(groupPtr)),
+                    State =
+                        Librdkafka.ConsumerGroupDescription_state(groupPtr),
+                    Coordinator = coordinator,
+                    Members = members,
+                };
+                return desc;
             }).ToList();
         }
 
@@ -263,6 +357,7 @@ namespace Confluent.Kafka
                                 }
 
                                 var type = Librdkafka.event_type(eventPtr);
+                                // Console.Error.WriteLine("Milind::type " + type.ToString() + " " + expectedType);
 
                                 var ptr = (IntPtr)Librdkafka.event_opaque(eventPtr);
                                 var gch = GCHandle.FromIntPtr(ptr);
@@ -578,7 +673,7 @@ namespace Confluent.Kafka
                                                         new KafkaException(kafkaHandle.CreatePossiblyFatalError(errorCode, errorStr))));
                                                 break;
                                         }
-                                        var results = extractAlterConsumerGroupResults(eventPtr);
+                                        var results = extractAlterConsumerGroupOffsetsResults(eventPtr);
                                         if (results.Any(r => r.Error.IsError) || results.Any(r => r.Partitions.Any(p => p.Error.IsError)))
                                         {
                                             Task.Run(() => 
@@ -602,7 +697,7 @@ namespace Confluent.Kafka
                                                         new KafkaException(kafkaHandle.CreatePossiblyFatalError(errorCode, errorStr))));
                                                 break;
                                         }
-                                        var results = extractListConsumerGroupResults(eventPtr);
+                                        var results = extractListConsumerGroupOffsetsResults(eventPtr);
                                         if (results.Any(r => r.Error.IsError) || results.Any(r => r.Partitions.Any(p => p.Error.IsError)))
                                         {
                                              Task.Run(() => 
@@ -613,6 +708,54 @@ namespace Confluent.Kafka
                                         {
                                             Task.Run(() =>
                                                 ((TaskCompletionSource<List<ListConsumerGroupOffsetsResult>>)adminClientResult).TrySetResult(results));
+                                        }
+                                        break;
+                                    }
+
+                                    case Librdkafka.EventType.ListConsumerGroups_Result:
+                                    {
+                                        if (errorCode != ErrorCode.NoError)
+                                        {
+                                            Task.Run(() => 
+                                                    ((TaskCompletionSource<ListConsumerGroupsResult>)adminClientResult).TrySetException(
+                                                        new KafkaException(kafkaHandle.CreatePossiblyFatalError(errorCode, errorStr))));
+                                                break;
+                                        }
+                                        var results = extractListConsumerGroupsResults(eventPtr);
+                                        if (results.Errors.Count() != 0)
+                                        {
+                                            Task.Run(() =>
+                                                    ((TaskCompletionSource<ListConsumerGroupsResult>)adminClientResult).TrySetException(
+                                                        new ListConsumerGroupsException(results)));
+                                        }
+                                        else
+                                        {
+                                            Task.Run(() =>
+                                                ((TaskCompletionSource<ListConsumerGroupsResult>)adminClientResult).TrySetResult(results));
+                                        }
+                                        break;
+                                    }
+
+                                    case Librdkafka.EventType.DescribeConsumerGroups_Result:
+                                    {
+                                        if (errorCode != ErrorCode.NoError)
+                                        {
+                                            Task.Run(() => 
+                                                    ((TaskCompletionSource<List<ConsumerGroupDescription>>)adminClientResult).TrySetException(
+                                                        new KafkaException(kafkaHandle.CreatePossiblyFatalError(errorCode, errorStr))));
+                                                break;
+                                        }
+                                        var results = extractDescribeConsumerGroupsResults(eventPtr);
+                                        if (results.Any(desc => desc.Error.IsError))
+                                        {
+                                            Task.Run(() =>
+                                                    ((TaskCompletionSource<ListConsumerGroupsResult>)adminClientResult).TrySetException(
+                                                        new DescribeConsumerGroupException(results)));
+                                        }
+                                        else
+                                        {
+                                            Task.Run(() =>
+                                                ((TaskCompletionSource<List<ConsumerGroupDescription>>)adminClientResult).TrySetResult(results));
                                         }
                                         break;
                                     }
@@ -659,6 +802,8 @@ namespace Confluent.Kafka
             { Librdkafka.EventType.DeleteAcls_Result, typeof(TaskCompletionSource<List<DeleteAclsResult>>) },
             { Librdkafka.EventType.AlterConsumerGroupOffsets_Result, typeof(TaskCompletionSource<List<AlterConsumerGroupOffsetsResult>>) },
             { Librdkafka.EventType.ListConsumerGroupOffsets_Result, typeof(TaskCompletionSource<List<ListConsumerGroupOffsetsResult>>) },
+            { Librdkafka.EventType.ListConsumerGroups_Result, typeof(TaskCompletionSource<ListConsumerGroupsResult>) },
+            { Librdkafka.EventType.DescribeConsumerGroups_Result, typeof(TaskCompletionSource<List<ConsumerGroupDescription>>) },
         };
 
 
@@ -1008,7 +1153,7 @@ namespace Confluent.Kafka
         }
 
         /// <summary>
-        ///     Refer to <see cref="Confluent.Kafka.IAdminClient.ListConsumerGroups(ListConsumerGroupsOptions)" />
+        ///     Refer to <see cref="Confluent.Kafka.IAdminClient.ListConsumerGroupsAsync(ListConsumerGroupsOptions)" />
         /// </summary>
         public Task<ListConsumerGroupsResult> ListConsumerGroupsAsync(ListConsumerGroupsOptions options = null) {
             var completionSource = new TaskCompletionSource<ListConsumerGroupsResult>();
@@ -1021,7 +1166,7 @@ namespace Confluent.Kafka
 
 
         /// <summary>
-        ///     Refer to <see cref="Confluent.Kafka.IAdminClient.DescribeConsumerGroups(IList{string}, DescribeConsumerGroupsOptions)" />
+        ///     Refer to <see cref="Confluent.Kafka.IAdminClient.DescribeConsumerGroupsAsync(IEnumerable{string}, DescribeConsumerGroupsOptions)" />
         /// </summary>
         public Task<List<ConsumerGroupDescription>> DescribeConsumerGroupsAsync(IEnumerable<string> groups, DescribeConsumerGroupsOptions options = null) {
             var completionSource = new TaskCompletionSource<List<ConsumerGroupDescription>>();

@@ -945,10 +945,10 @@ namespace Confluent.Kafka.Impl.NativeMethods
         internal static extern ConsumerGroupState rd_kafka_ConsumerGroupListing_state(IntPtr grplist);
 
         [DllImport(DllName, CallingConvention = CallingConvention.Cdecl)]
-        internal static extern IntPtr rd_kafka_ListConsumerGroups_result_valid(IntPtr result, UIntPtr cntp);
+        internal static extern IntPtr rd_kafka_ListConsumerGroups_result_valid(IntPtr result, out UIntPtr cntp);
 
         [DllImport(DllName, CallingConvention = CallingConvention.Cdecl)]
-        internal static extern IntPtr rd_kafka_ListConsumerGroups_result_errors(IntPtr result, UIntPtr cntp);
+        internal static extern IntPtr rd_kafka_ListConsumerGroups_result_errors(IntPtr result, out UIntPtr cntp);
 
         [DllImport(DllName, CallingConvention = CallingConvention.Cdecl)]
         internal static extern void rd_kafka_DescribeConsumerGroups(
@@ -959,7 +959,7 @@ namespace Confluent.Kafka.Impl.NativeMethods
                 IntPtr resultQueuePtr);
 
         [DllImport(DllName, CallingConvention = CallingConvention.Cdecl)]
-        internal static extern IntPtr rd_kafka_DescribeConsumerGroups_result_groups(IntPtr result, UIntPtr cntp);
+        internal static extern IntPtr rd_kafka_DescribeConsumerGroups_result_groups(IntPtr result, out UIntPtr cntp);
 
         [DllImport(DllName, CallingConvention = CallingConvention.Cdecl)]
         internal static extern IntPtr rd_kafka_ConsumerGroupDescription_group_id(IntPtr grpdesc);
@@ -1001,8 +1001,16 @@ namespace Confluent.Kafka.Impl.NativeMethods
         internal static extern IntPtr rd_kafka_MemberDescription_assignment(IntPtr member);
 
         [DllImport(DllName, CallingConvention = CallingConvention.Cdecl)]
-        internal static extern IntPtr rd_kafka_MemberAssignment_topic_partitions(IntPtr assignment);
+        internal static extern IntPtr rd_kafka_MemberAssignment_partitions(IntPtr assignment);
 
+        [DllImport(DllName, CallingConvention = CallingConvention.Cdecl)]
+        internal static extern IntPtr rd_kafka_Node_id(IntPtr node);
+
+        [DllImport(DllName, CallingConvention = CallingConvention.Cdecl)]
+        internal static extern IntPtr rd_kafka_Node_host(IntPtr node);
+
+        [DllImport(DllName, CallingConvention = CallingConvention.Cdecl)]
+        internal static extern IntPtr rd_kafka_Node_port(IntPtr node);
 
         [DllImport(DllName, CallingConvention = CallingConvention.Cdecl)]
         internal static extern ErrorCode rd_kafka_topic_result_error(IntPtr topicres);

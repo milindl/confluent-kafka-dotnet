@@ -13,38 +13,35 @@
 // limitations under the License.
 //
 // Refer to LICENSE for more information.
-using System.Collections.Generic;
 
-namespace Confluent.Kafka.Admin
+namespace Confluent.Kafka
 {
     /// <summary>
-    ///     Represents the result of a list consumer group operation.
+    ///     Node represents a Kafka broker.
     /// </summary>
-    public class ListConsumerGroupsResult
+    public class Node
     {
         /// <summary>
-        ///    List of valid consumer group listings.
+        ///     Id represents the Node Id.
         /// </summary>
-        public List<ConsumerGroupListing> Valid { get; set; }
+        public int Id { get; set; }
 
         /// <summary>
-        ///   List of non-client level errors encountered while listing groups.
+        ///     Host represents the host of the broker.
         /// </summary>
-        public List<Error> Errors { get; set; }
+        public string Host { get; set; }
+
+        /// <summary>
+        ///     Port represents the port of the broker.
+        /// </summary>
+        public int Port { get; set; }
 
         /// <summary>
         ///    Returns a human readable representation of this object.
         /// </summary>
-        public override string ToString() {
-            string res = "Groups:\n";
-            foreach (ConsumerGroupListing cgl in Valid) {
-                res += "\t" + cgl.ToString() + "\n";
-            }
-            res += "Errors:\n";
-            foreach (Error err in Errors) {
-                res += "\t" + err.ToString() + "\n";
-            }
-            return res;
+        public override string ToString()
+        {
+            return $"Id = {Id}, {Host}:{Port}";
         }
     }
 }

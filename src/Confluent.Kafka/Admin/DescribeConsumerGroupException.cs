@@ -1,3 +1,4 @@
+
 // Copyright 2022 Confluent Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
@@ -34,10 +35,10 @@ namespace Confluent.Kafka.Admin
         ///     (whether or not they were in error). At least one of these
         ///     results will be in error.
         /// </param>
-        public DescribeConsumerGroupException(List<GroupInfo> results)
+        public DescribeConsumerGroupException(List<ConsumerGroupDescription> results)
             : base(new Error(ErrorCode.Local_Partial,
                 "An error occurred describing consumer groups: [" +
-                String.Join(", ", results.Where(r => r.Error.IsError).Select(r => r.Group)) +
+                String.Join(", ", results.Where(r => r.Error.IsError).Select(r => r.GroupId)) +
                 "]: [" + String.Join(", ", results.Where(r => r.Error.IsError).Select(r => r.Error)) +
                 "]."))
         {
@@ -49,6 +50,6 @@ namespace Confluent.Kafka.Admin
         ///     (whether or not they were in error). At least one of these
         ///     results will be in error.
         /// </summary>
-        public List<GroupInfo> Results { get; }
+        public List<ConsumerGroupDescription> Results { get; }
     }
 }

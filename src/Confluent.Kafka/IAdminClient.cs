@@ -391,19 +391,17 @@ namespace Confluent.Kafka
         /// <exception cref="KafkaException">
         ///     Thrown if there is any client-level error.
         /// </exception>
-        /// <exception cref="ListConsumerGroupException">
+        /// <exception cref="ListConsumerGroupsException">
         ///     Thrown if any of the constituent results is in
         ///     error. The entire result (which may contain
         ///     constituent results that are not in error) is
-        ///     available via the <see cref="Confluent.Kafka.Admin.ListConsumerGroupException.Results" />
+        ///     available via the <see cref="Confluent.Kafka.Admin.ListConsumerGroupsException.Results" />
         ///     property of the exception.
         /// </exception>
         /// <returns>
-        ///     A List of <see cref="Confluent.Kafka.GroupInfo"/>, with
-        ///     only the GroupInfo.Group and GroupInfo.Error populated.
-        ///     TODO(milind): a bit torn on whether we should have a different return type for this
-        ///                   or mirror librdkafka and have the same return for list and describe both.
-        ///                   This todo will be removed after a PR review.
+        ///     A ListConsumerGroupsResult, which contains a List of
+        ///     <see cref="Confluent.Kafka.Admin.ConsumerGroupListing"/> and a
+        ///     List of Errors.
         /// </returns>
         Task<ListConsumerGroupsResult> ListConsumerGroupsAsync(ListConsumerGroupsOptions options = null);
 
@@ -428,9 +426,10 @@ namespace Confluent.Kafka
         ///     property of the exception.
         /// </exception>
         /// <returns>
-        ///     A List of <see cref="Confluent.Kafka.GroupInfo"/>.
+        ///     A List of <see cref="Confluent.Kafka.Admin.ConsumerGroupDescription"/>.
         /// </returns>
-        Task<List<ConsumerGroupDescription>> DescribeConsumerGroupsAsync(IEnumerable<string> groups, DescribeConsumerGroupsOptions options = null);
+        Task<List<ConsumerGroupDescription>> DescribeConsumerGroupsAsync(
+            IEnumerable<string> groups, DescribeConsumerGroupsOptions options = null);
     }
 
 }

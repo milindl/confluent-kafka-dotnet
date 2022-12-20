@@ -14,21 +14,35 @@
 //
 // Refer to LICENSE for more information.
 
-using System;
-using System.Collections.Generic;
-
 namespace Confluent.Kafka.Admin
 {
     /// <summary>
-    ///     
+    ///     Represents a single consumer group in the result of a list consumer
+    ///     groups operation.
     /// </summary>
     public class ConsumerGroupListing
     {
         /// <summary>
         ///     The groupID.
         /// </summary>
-        public string Group { get; set; }
+        public string GroupId { get; set; }
 
-        internal Error Error { get; set; }
+        /// <summary>
+        ///     The state of the consumer group.
+        /// </summary>
+        public ConsumerGroupState State { get; set; }
+
+        /// <summary>
+        ///     Whether the consumer group is simple or not.
+        /// </summary>
+        public bool IsSimpleConsumerGroup { get; set; }
+
+        /// <summary>
+        ///    Returns a human readable representation of this object.
+        /// </summary>
+        public override string ToString()
+        {
+            return $"{GroupId}, State = {State}, IsSimpleConsumerGroup = {IsSimpleConsumerGroup}";
+        }
     }
 }

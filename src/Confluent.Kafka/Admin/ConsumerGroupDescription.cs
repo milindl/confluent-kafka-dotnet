@@ -14,21 +14,49 @@
 //
 // Refer to LICENSE for more information.
 
-using System;
 using System.Collections.Generic;
 
 namespace Confluent.Kafka.Admin
 {
     /// <summary>
-    ///     
+    /// Represents a single consumer group's description in the result of a
+    /// describe consumer group operation.
     /// </summary>
     public class ConsumerGroupDescription
     {
         /// <summary>
         ///     The groupID.
         /// </summary>
-        public string Group { get; set; }
+        public string GroupId { get; set; }
 
-        internal Error Error { get; set; }
+        /// <summary>
+        ///     Error, if any, of result
+        /// </summary>
+        public Error Error { get; set; }
+
+        /// <summary>
+        ///     Whether the consumer group is simple or not.
+        /// </summary>
+        public bool IsSimpleConsumerGroup { get; set; }
+
+        /// <summary>
+        ///     Partition assignor identifier.
+        /// </summary>
+        public string PartitionAssignor { get; set; }
+
+        /// <summary>
+        ///     Consumer group state.
+        /// </summary>
+        public ConsumerGroupState State { get; set; }
+
+        /// <summary>
+        ///     Consumer group coordinator (broker).
+        /// </summary>
+        public Node Coordinator { get; set; }
+
+        /// <summary>
+        ///    Members list.
+        /// </summary>
+        public List<MemberDescription> Members { get; set; }
     }
 }

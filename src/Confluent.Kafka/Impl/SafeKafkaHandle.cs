@@ -1406,11 +1406,11 @@ namespace Confluent.Kafka.Impl
 
         private void setOption_ConsumerGroupStates(IntPtr optionsPtr, ConsumerGroupState[] states)
         {
-            var rError = Librdkafka.AdminOptions_set_consumer_group_states(optionsPtr, states, (UIntPtr)states.Count());
-            var error = new Error(rError, true);
-            if (error.Code != ErrorCode.NoError)
+            var error = Librdkafka.AdminOptions_set_consumer_group_states(optionsPtr, states, (UIntPtr)states.Count());
+            Console.Error.WriteLine(string.Join(", ", states) + " | " + states.Count());
+            if (error != IntPtr.Zero)
             {
-                throw new KafkaException(error);
+                throw new KafkaException(new Error(error, true));
             }
         }
 
@@ -2150,8 +2150,9 @@ namespace Confluent.Kafka.Impl
             IntPtr optionsPtr = IntPtr.Zero;
             try
             {
+                // Set Admin Options if any.
                 options = options ?? new ListConsumerGroupsOptions();
-                optionsPtr = Librdkafka.AdminOptions_new(handle, Librdkafka.AdminOp.ListConsumerGroupOffsets);
+                optionsPtr = Librdkafka.AdminOptions_new(handle, Librdkafka.AdminOp.ListConsumerGroups);
                 setOption_RequestTimeout(optionsPtr, options.RequestTimeout);
                 if (options.States != null)
                 {
@@ -2159,6 +2160,7 @@ namespace Confluent.Kafka.Impl
                 }
                 setOption_completionSource(optionsPtr, completionSourcePtr);
 
+                // Call ListConsumerGroups (async).
                 Librdkafka.ListConsumerGroups(handle, optionsPtr, resultQueuePtr);
             }
             finally
@@ -2175,7 +2177,32 @@ namespace Confluent.Kafka.Impl
         internal void DescribeConsumerGroups(IEnumerable<string> groups, DescribeConsumerGroupsOptions options, IntPtr resultQueuePtr, IntPtr completionSourcePtr)
         {
             ThrowIfHandleClosed();
-            throw new Exception("Unimplemented");
+
+            if (groups == null || groups.Count() == 0) {
+                throw new ArgumentException("at least one group should be provided to DescribeConsumerGroups");
+            }
+
+            var optionsPtr = IntPtr.Zero;
+            try
+            {
+                // Set Admin Options if any.
+                options = options ?? new DescribeConsumerGroupsOptions();
+                optionsPtr = Librdkafka.AdminOptions_new(handle, Librdkafka.AdminOp.DescribeConsumerGroups);
+                setOption_RequestTimeout(optionsPtr, options.RequestTimeout);
+                setOption_completionSource(optionsPtr, completionSourcePtr);
+
+                // Call DescribeConsumerGroups (async).
+                Librdkafka.DescribeConsumerGroups(
+                    handle, groups.ToArray(), (UIntPtr)(groups.Count()),
+                    optionsPtr, resultQueuePtr);
+            }
+            finally
+            {
+                if (optionsPtr != IntPtr.Zero)
+                {
+                    Librdkafka.AdminOptions_destroy(optionsPtr);
+                }
+            }
         }
 
         internal void OAuthBearerSetToken(string tokenValue, long lifetimeMs, string principalName, IDictionary<string, string> extensions)

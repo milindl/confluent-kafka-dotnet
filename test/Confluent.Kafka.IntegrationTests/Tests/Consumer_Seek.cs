@@ -40,7 +40,7 @@ namespace Confluent.Kafka.IntegrationTests
                 BootstrapServers = bootstrapServers
             };
 
-            var producerConfig = new ProducerConfig { BootstrapServers = bootstrapServers };
+            var producerConfig = new ProducerConfig { BootstrapServers = bootstrapServers , Debug = "All"};
 
             using (var producer = new ProducerBuilder<byte[], byte[]>(producerConfig).Build())
             using (var consumer =

@@ -65,8 +65,10 @@ namespace Confluent.Kafka.Impl
             CreateAcls = 9,
             DescribeAcls = 10,
             DeleteAcls = 11,
-            AlterConsumerGroupOffsets = 12,
-            ListConsumerGroupOffsets = 13,
+            ListConsumerGroups = 12,
+            DescribeConsumerGroups = 13,
+            AlterConsumerGroupOffsets = 14,
+            ListConsumerGroupOffsets = 15,
         }
 
         public enum EventType : int
@@ -92,6 +94,8 @@ namespace Confluent.Kafka.Impl
             DeleteAcls_Result = 0x1000,
             AlterConsumerGroupOffsets_Result = 0x1200,
             ListConsumerGroupOffsets_Result = 0x1400,
+            ListConsumerGroups_Result = 0x1600,
+            DescribeConsumerGroups_Result = 0x1800,
         }
 
         // Minimum librdkafka version.
@@ -389,7 +393,11 @@ namespace Confluent.Kafka.Impl
             _MemberDescription_consumer_id = (_MemberDescription_consumer_id_delegate)methods.Single(m => m.Name == "rd_kafka_MemberDescription_consumer_id").CreateDelegate(typeof (_MemberDescription_consumer_id_delegate));
             _MemberDescription_host = (_MemberDescription_host_delegate)methods.Single(m => m.Name == "rd_kafka_MemberDescription_host").CreateDelegate(typeof (_MemberDescription_host_delegate));
             _MemberDescription_assignment = (_MemberDescription_assignment_delegate)methods.Single(m => m.Name == "rd_kafka_MemberDescription_assignment").CreateDelegate(typeof (_MemberDescription_assignment_delegate));
-            _MemberAssignment_topic_partitions = (_MemberAssignment_topic_partitions_delegate)methods.Single(m => m.Name == "rd_kafka_MemberAssignment_topic_partitions").CreateDelegate(typeof (_MemberAssignment_topic_partitions_delegate));
+            _MemberAssignment_partitions = (_MemberAssignment_partitions_delegate)methods.Single(m => m.Name == "rd_kafka_MemberAssignment_partitions").CreateDelegate(typeof (_MemberAssignment_partitions_delegate));
+            _Node_id = (_Node_id_delegate)methods.Single(m => m.Name == "rd_kafka_Node_id").CreateDelegate(typeof (_Node_id_delegate));
+            _Node_host = (_Node_host_delegate)methods.Single(m => m.Name == "rd_kafka_Node_host").CreateDelegate(typeof (_Node_host_delegate));
+            _Node_port = (_Node_port_delegate)methods.Single(m => m.Name == "rd_kafka_Node_port").CreateDelegate(typeof (_Node_port_delegate));
+
 
             _topic_result_error = (Func<IntPtr, ErrorCode>)methods.Single(m => m.Name == "rd_kafka_topic_result_error").CreateDelegate(typeof(Func<IntPtr, ErrorCode>));
             _topic_result_error_string = (Func<IntPtr, IntPtr>)methods.Single(m => m.Name == "rd_kafka_topic_result_error_string").CreateDelegate(typeof(Func<IntPtr, IntPtr>));
@@ -1689,15 +1697,15 @@ namespace Confluent.Kafka.Impl
          internal static ConsumerGroupState  ConsumerGroupListing_state(IntPtr grplist)
             => _ConsumerGroupListing_state(grplist);
 
-         private delegate IntPtr  _ListConsumerGroups_result_valid_delegate(IntPtr result, UIntPtr cntp);
+         private delegate IntPtr  _ListConsumerGroups_result_valid_delegate(IntPtr result, out UIntPtr cntp);
          private static _ListConsumerGroups_result_valid_delegate _ListConsumerGroups_result_valid;
-         internal static IntPtr  ListConsumerGroups_result_valid(IntPtr result, UIntPtr cntp)
-            => _ListConsumerGroups_result_valid(result, cntp);
+         internal static IntPtr  ListConsumerGroups_result_valid(IntPtr result, out UIntPtr cntp)
+            => _ListConsumerGroups_result_valid(result, out cntp);
 
-         private delegate IntPtr  _ListConsumerGroups_result_errors_delegate(IntPtr result, UIntPtr cntp);
+         private delegate IntPtr  _ListConsumerGroups_result_errors_delegate(IntPtr result, out UIntPtr cntp);
          private static _ListConsumerGroups_result_errors_delegate _ListConsumerGroups_result_errors;
-         internal static IntPtr  ListConsumerGroups_result_errors(IntPtr result, UIntPtr cntp)
-            => _ListConsumerGroups_result_errors(result, cntp);
+         internal static IntPtr  ListConsumerGroups_result_errors(IntPtr result, out UIntPtr cntp)
+            => _ListConsumerGroups_result_errors(result, out cntp);
 
          private delegate void  _DescribeConsumerGroups_delegate(
             IntPtr handle, [MarshalAs(UnmanagedType.LPArray)] string[] groups, UIntPtr groupsCnt, IntPtr optionsPtr, IntPtr resultQueuePtr);
@@ -1706,10 +1714,10 @@ namespace Confluent.Kafka.Impl
             IntPtr handle, [MarshalAs(UnmanagedType.LPArray)] string[] groups, UIntPtr groupsCnt, IntPtr optionsPtr, IntPtr resultQueuePtr)
             => _DescribeConsumerGroups(handle, groups, groupsCnt, optionsPtr, resultQueuePtr);
 
-         private delegate IntPtr  _DescribeConsumerGroups_result_groups_delegate(IntPtr result, UIntPtr cntp);
+         private delegate IntPtr  _DescribeConsumerGroups_result_groups_delegate(IntPtr result, out UIntPtr cntp);
          private static _DescribeConsumerGroups_result_groups_delegate _DescribeConsumerGroups_result_groups;
-         internal static IntPtr  DescribeConsumerGroups_result_groups(IntPtr result, UIntPtr cntp)
-            => _DescribeConsumerGroups_result_groups(result, cntp);
+         internal static IntPtr  DescribeConsumerGroups_result_groups(IntPtr result, out UIntPtr cntp)
+            => _DescribeConsumerGroups_result_groups(result, out cntp);
 
          private delegate IntPtr  _ConsumerGroupDescription_group_id_delegate(IntPtr grpdesc);
          private static _ConsumerGroupDescription_group_id_delegate _ConsumerGroupDescription_group_id;
@@ -1733,8 +1741,9 @@ namespace Confluent.Kafka.Impl
 
          private delegate ConsumerGroupState  _ConsumerGroupDescription_state_delegate(IntPtr grpdesc);
          private static _ConsumerGroupDescription_state_delegate _ConsumerGroupDescription_state;
-         internal static ConsumerGroupState  ConsumerGroupDescription_state(IntPtr grpdesc)
-            => _ConsumerGroupDescription_state(grpdesc);
+         internal static ConsumerGroupState  ConsumerGroupDescription_state(IntPtr grpdesc) {
+            return _ConsumerGroupDescription_state(grpdesc);
+         }
 
          private delegate IntPtr  _ConsumerGroupDescription_coordinator_delegate(IntPtr grpdesc);
          private static _ConsumerGroupDescription_coordinator_delegate _ConsumerGroupDescription_coordinator;
@@ -1776,10 +1785,22 @@ namespace Confluent.Kafka.Impl
          internal static IntPtr  MemberDescription_assignment(IntPtr member)
             => _MemberDescription_assignment(member);
 
-         private delegate IntPtr  _MemberAssignment_topic_partitions_delegate(IntPtr assignment);
-         private static _MemberAssignment_topic_partitions_delegate _MemberAssignment_topic_partitions;
+         private delegate IntPtr  _MemberAssignment_partitions_delegate(IntPtr assignment);
+         private static _MemberAssignment_partitions_delegate _MemberAssignment_partitions;
          internal static IntPtr  MemberAssignment_topic_partitions(IntPtr assignment)
-            => _MemberAssignment_topic_partitions(assignment);
+            => _MemberAssignment_partitions(assignment);
+
+        private delegate IntPtr _Node_id_delegate(IntPtr node);
+        private static _Node_id_delegate _Node_id;
+        internal static IntPtr Node_id(IntPtr node) => _Node_id(node);
+
+        private delegate IntPtr _Node_host_delegate(IntPtr node);
+        private static _Node_host_delegate _Node_host;
+        internal static IntPtr Node_host(IntPtr node) => _Node_host(node);
+
+        private delegate IntPtr _Node_port_delegate(IntPtr node);
+        private static _Node_port_delegate _Node_port;
+        internal static IntPtr Node_port(IntPtr node) => _Node_port(node);
 
         private static Func<IntPtr, ErrorCode> _topic_result_error;
         internal static ErrorCode topic_result_error(IntPtr topicres) => _topic_result_error(topicres);
