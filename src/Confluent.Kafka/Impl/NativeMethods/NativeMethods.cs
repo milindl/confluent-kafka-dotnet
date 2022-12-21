@@ -510,7 +510,7 @@ namespace Confluent.Kafka.Impl.NativeMethods
                         IntPtr true_or_false);
 
        [DllImport(DllName, CallingConvention = CallingConvention.Cdecl)]
-        internal static extern IntPtr rd_kafka_AdminOptions_set_consumer_group_states(
+        internal static extern IntPtr rd_kafka_AdminOptions_set_match_consumer_group_states(
                         IntPtr options,
                         ConsumerGroupState[] states,
                         UIntPtr statesCnt);

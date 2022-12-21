@@ -26,7 +26,7 @@ namespace Confluent.Kafka.IntegrationTests
 {
     public partial class Tests
     {
-        // A convenience method to check the resultant GroupInfos obtained on describing a group.
+        // A convenience method to check the resultant ConsumerGroupDescription obtained on describing a group.
         private void checkConsumerGroupDescription(
             ConsumerGroupDescription desc, ConsumerGroupState state,
             string protocol, string groupID,
@@ -149,7 +149,7 @@ namespace Confluent.Kafka.IntegrationTests
                 // Check the 'States' option by listing Stable consumer groups, which shouldn't
                 // include `groupID`.
                 groups = adminClient.ListConsumerGroupsAsync(new Admin.ListConsumerGroupsOptions() 
-                { States = new List<ConsumerGroupState>() { ConsumerGroupState.Stable },
+                { MatchStates = new List<ConsumerGroupState>() { ConsumerGroupState.Stable },
                   RequestTimeout = TimeSpan.FromSeconds(30) }).Result;
                 Assert.Empty(groups.Valid.Where(group => group.GroupId == groupID));
 

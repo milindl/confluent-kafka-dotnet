@@ -1404,9 +1404,9 @@ namespace Confluent.Kafka.Impl
 
         }
 
-        private void setOption_ConsumerGroupStates(IntPtr optionsPtr, ConsumerGroupState[] states)
+        private void setOption_MatchConsumerGroupStates(IntPtr optionsPtr, ConsumerGroupState[] states)
         {
-            var error = Librdkafka.AdminOptions_set_consumer_group_states(optionsPtr, states, (UIntPtr)states.Count());
+            var error = Librdkafka.AdminOptions_set_match_consumer_group_states(optionsPtr, states, (UIntPtr)states.Count());
             Console.Error.WriteLine(string.Join(", ", states) + " | " + states.Count());
             if (error != IntPtr.Zero)
             {
@@ -2154,9 +2154,9 @@ namespace Confluent.Kafka.Impl
                 options = options ?? new ListConsumerGroupsOptions();
                 optionsPtr = Librdkafka.AdminOptions_new(handle, Librdkafka.AdminOp.ListConsumerGroups);
                 setOption_RequestTimeout(optionsPtr, options.RequestTimeout);
-                if (options.States != null)
+                if (options.MatchStates != null)
                 {
-                    setOption_ConsumerGroupStates(optionsPtr, options.States.ToArray());
+                    setOption_MatchConsumerGroupStates(optionsPtr, options.MatchStates.ToArray());
                 }
                 setOption_completionSource(optionsPtr, completionSourcePtr);
 

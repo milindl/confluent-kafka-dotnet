@@ -357,7 +357,7 @@ namespace Confluent.Kafka
                                 }
 
                                 var type = Librdkafka.event_type(eventPtr);
-                                // Console.Error.WriteLine("Milind::type " + type.ToString() + " " + expectedType);
+                                Console.Error.WriteLine("Milind::type " + type.ToString() + " " + " x");
 
                                 var ptr = (IntPtr)Librdkafka.event_opaque(eventPtr);
                                 var gch = GCHandle.FromIntPtr(ptr);
@@ -367,12 +367,14 @@ namespace Confluent.Kafka
                                 if (!adminClientResultTypes.TryGetValue(type, out Type expectedType))
                                 {
                                     // Should never happen.
+                                    Console.Error.WriteLine($"Unknown result type: {type}");
                                     throw new InvalidOperationException($"Unknown result type: {type}");
                                 }
 
                                 if (adminClientResult.GetType() != expectedType)
                                 {
                                     // Should never happen.
+                                    Console.Error.WriteLine($"Completion source type mismatch. Expected {expectedType.Name}, got {type}");
                                     throw new InvalidOperationException($"Completion source type mismatch. Expected {expectedType.Name}, got {type}");
                                 }
 

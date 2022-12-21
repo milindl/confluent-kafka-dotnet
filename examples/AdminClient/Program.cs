@@ -324,12 +324,11 @@ namespace Confluent.Kafka.Examples
 
             var input = new List<GroupTopicPartitionOffsets>() { new GroupTopicPartitionOffsets(group, tpoes) };
 
-            using (var adminClient = new AdminClientBuilder(new AdminClientConfig { BootstrapServers = bootstrapServers }).Build())
+            using (var adminClient = new AdminClientBuilder(new AdminClientConfig { BootstrapServers = bootstrapServers, Debug = "all" }).Build())
             {
                 try
                 {
-                    await adminClient.AlterConsumerGroupOffsetsAsync(input);
-                    Console.WriteLine("Altered offsets successfully.");
+                    await adminClient.AlterConsumerGroupOffsetsAsync(input).ContinueWith(ct => {});
                 }
                 catch (AlterConsumerGroupOffsetsException e)
                 {
@@ -368,7 +367,7 @@ namespace Confluent.Kafka.Examples
 
             var input = new List<GroupTopicPartitions>() { new GroupTopicPartitions(group, tpes) };
 
-            using (var adminClient = new AdminClientBuilder(new AdminClientConfig { BootstrapServers = bootstrapServers }).Build())
+            using (var adminClient = new AdminClientBuilder(new AdminClientConfig { BootstrapServers = bootstrapServers, Debug = "admin" }).Build())
             {
                 try
                 {
@@ -408,7 +407,7 @@ namespace Confluent.Kafka.Examples
                 {
                     var result = await adminClient.ListConsumerGroupsAsync(new ListConsumerGroupsOptions() { 
                         RequestTimeout = timeout,
-                        States = statesList,
+                        MatchStates = statesList,
                     });
                     Console.WriteLine(result);
                 }

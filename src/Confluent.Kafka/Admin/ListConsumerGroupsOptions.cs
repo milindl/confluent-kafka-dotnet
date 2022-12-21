@@ -40,6 +40,6 @@ namespace Confluent.Kafka.Admin
         ///
         ///     Default: null
         /// </summary>
-        public IEnumerable<ConsumerGroupState> States { get; set; } = null;
+        public IEnumerable<ConsumerGroupState> MatchStates { get; set; } = null;
     }
 }
