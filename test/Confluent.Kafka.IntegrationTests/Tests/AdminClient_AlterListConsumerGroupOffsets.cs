@@ -63,7 +63,6 @@ namespace Confluent.Kafka.IntegrationTests
             // Create an AdminClient here - to test alter while the consumer is still active.
             var adminClient = new AdminClientBuilder(new AdminClientConfig {
                 BootstrapServers = bootstrapServers,
-                Debug = "all",
             }).Build();
 
             // 2. Consume

@@ -324,11 +324,16 @@ namespace Confluent.Kafka.Examples
 
             var input = new List<GroupTopicPartitionOffsets>() { new GroupTopicPartitionOffsets(group, tpoes) };
 
-            using (var adminClient = new AdminClientBuilder(new AdminClientConfig { BootstrapServers = bootstrapServers, Debug = "all" }).Build())
+            using (var adminClient = new AdminClientBuilder(new AdminClientConfig { BootstrapServers = bootstrapServers }).Build())
             {
                 try
                 {
-                    await adminClient.AlterConsumerGroupOffsetsAsync(input).ContinueWith(ct => {});
+                    var results = await adminClient.AlterConsumerGroupOffsetsAsync(input);
+                    Console.WriteLine("Successfully altered offsets:");
+                    foreach(var groupResult in results) {
+                        Console.WriteLine(groupResult);
+                    }
+
                 }
                 catch (AlterConsumerGroupOffsetsException e)
                 {
@@ -367,16 +372,15 @@ namespace Confluent.Kafka.Examples
 
             var input = new List<GroupTopicPartitions>() { new GroupTopicPartitions(group, tpes) };
 
-            using (var adminClient = new AdminClientBuilder(new AdminClientConfig { BootstrapServers = bootstrapServers, Debug = "admin" }).Build())
+            using (var adminClient = new AdminClientBuilder(new AdminClientConfig { BootstrapServers = bootstrapServers }).Build())
             {
                 try
                 {
-                    await adminClient.ListConsumerGroupOffsetsAsync(input).ContinueWith(ct => {
-                        Console.WriteLine("Successfully listed offsets:");
-                        foreach(var groupResult in ct.Result) {
-                            Console.WriteLine(groupResult);
-                        }
-                    });
+                    var result = await adminClient.ListConsumerGroupOffsetsAsync(input);
+                    Console.WriteLine("Successfully listed offsets:");
+                    foreach(var groupResult in result) {
+                        Console.WriteLine(groupResult);
+                    }
                 }
                 catch (ListConsumerGroupOffsetsException e)
                 {
@@ -390,15 +394,24 @@ namespace Confluent.Kafka.Examples
         static async Task ListConsumerGroupsAsync(string bootstrapServers, string[] commandArgs) {
             var timeout = TimeSpan.FromSeconds(30);
             var statesList = new List<ConsumerGroupState>();
-            if (commandArgs.Length > 0)
+            try
             {
-                timeout = TimeSpan.FromSeconds(Int32.Parse(commandArgs[0]));
-            }
-            if (commandArgs.Length > 1)
-            {
-                for (int i = 1; i < commandArgs.Length; i++) {
-                    statesList.Add(Enum.Parse<ConsumerGroupState>(commandArgs[i]));
+                if (commandArgs.Length > 0)
+                {
+                    timeout = TimeSpan.FromSeconds(Int32.Parse(commandArgs[0]));
                 }
+                if (commandArgs.Length > 1)
+                {
+                    for (int i = 1; i < commandArgs.Length; i++) {
+                        statesList.Add(Enum.Parse<ConsumerGroupState>(commandArgs[i]));
+                    }
+                }
+            }
+            catch (SystemException)
+            {
+                Console.WriteLine("usage: .. <bootstrapServers> list-consumer-groups [<timeout_seconds> <match_state_1> <match_state_2> ... <match_state_N>]");
+                Environment.ExitCode = 1;
+                return;
             }
 
             using (var adminClient = new AdminClientBuilder(new AdminClientConfig { BootstrapServers = bootstrapServers }).Build())
@@ -423,24 +436,24 @@ namespace Confluent.Kafka.Examples
 
 
         static async Task DescribeConsumerGroupsAsync(string bootstrapServers, string[] commandArgs) {
-            List<string> groupNames = null;
-            if (commandArgs.Length > 0)
+            if (commandArgs.Length < 1)
             {
-                groupNames = commandArgs.ToList();
+                Console.WriteLine("usage: .. <bootstrapServers> describe-consumer-groups <group1> [<group2 ... <groupN>]");
+                Environment.ExitCode = 1;
+                return;
             }
 
+            var groupNames = commandArgs.ToList();
             var timeout = TimeSpan.FromSeconds(30);
             using (var adminClient = new AdminClientBuilder(new AdminClientConfig { BootstrapServers = bootstrapServers }).Build())
             {
                 try
                 {
-                    Console.Error.WriteLine("Calling describe...");
                     var groups = await adminClient.DescribeConsumerGroupsAsync(groupNames, new DescribeConsumerGroupsOptions() { RequestTimeout = timeout });
                     foreach (var group in groups)
                     {
                         Console.WriteLine($"  Group: {group.GroupId} {group.Error}");
                         Console.WriteLine($"  Broker: {group.Coordinator}");
-                        // Console.WriteLine($"  Protocol: {group.ProtocolType} {group.Protocol}");
                         Console.WriteLine($"  IsSimpleConsumerGroup: {group.IsSimpleConsumerGroup}");
                         Console.WriteLine($"  PartitionAssignor: {group.PartitionAssignor}");
                         Console.WriteLine($"  State: {group.State}");
@@ -448,7 +461,6 @@ namespace Confluent.Kafka.Examples
                         foreach (var m in group.Members)
                         {
                             Console.WriteLine($"    {m.ClientId} {m.ConsumerId} {m.Host}");
-                        //     Console.WriteLine($"    Metadata: {m.MemberMetadata.Length} bytes");
                             Console.WriteLine($"    Assignment:");
                             var topicPartitions = "";
                             if (m.Assignment.TopicPartitions != null)

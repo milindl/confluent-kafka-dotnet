@@ -42,7 +42,7 @@ namespace Confluent.Kafka.Admin
         /// </summary>
         public override string ToString() {
             var errString = Error.IsError ? Error.ToString() : "";
-            return $"{Group} [ {String.Join(", ", Partitions)} ] ${errString}";
+            return $"{Group} [ {String.Join(", ", Partitions)} ] {errString}";
         }
     }
 }

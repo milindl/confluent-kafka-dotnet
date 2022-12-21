@@ -40,9 +40,11 @@ namespace Confluent.Kafka.Admin
             foreach (ConsumerGroupListing cgl in Valid) {
                 res += "\t" + cgl.ToString() + "\n";
             }
-            res += "Errors:\n";
-            foreach (Error err in Errors) {
-                res += "\t" + err.ToString() + "\n";
+            if (Errors.Count != 0) {
+                res += "Errors:\n";
+                foreach (Error err in Errors) {
+                    res += "\t" + err.ToString() + "\n";
+                }
             }
             return res;
         }

@@ -1305,8 +1305,6 @@ namespace Confluent.Kafka.Impl
                             gi.group,
                             gi.err,
                             gi.state,
-                            gi.state_code,
-                            gi.is_simple_consumer_group == 1,
                             gi.protocol_type,
                             gi.protocol,
                             Enumerable.Range(0, gi.member_cnt)
@@ -1321,8 +1319,7 @@ namespace Confluent.Kafka.Impl
                                             mi.member_metadata_size),
                                         CopyBytes(
                                             mi.member_assignment,
-                                            mi.member_assignment_size),
-                                            null
+                                            mi.member_assignment_size)
                                     ))
                                 .ToList()
                         ))

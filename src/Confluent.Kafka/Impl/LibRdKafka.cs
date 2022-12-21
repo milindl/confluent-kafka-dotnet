@@ -92,10 +92,10 @@ namespace Confluent.Kafka.Impl
             CreateAcls_Result = 0x400,
             DescribeAcls_Result = 0x800,
             DeleteAcls_Result = 0x1000,
-            AlterConsumerGroupOffsets_Result = 0x1200,
-            ListConsumerGroupOffsets_Result = 0x1400,
-            ListConsumerGroups_Result = 0x1600,
-            DescribeConsumerGroups_Result = 0x1800,
+            ListConsumerGroups_Result = 0x2000,
+            DescribeConsumerGroups_Result = 0x4000,
+            ListConsumerGroupOffsets_Result = 0x8000,
+            AlterConsumerGroupOffsets_Result = 0x10000,
         }
 
         // Minimum librdkafka version.
